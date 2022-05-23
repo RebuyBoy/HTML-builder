@@ -9,6 +9,7 @@ const assetsPath = path.join(__dirname, 'assets');
 const bundleAssetsPath = path.join(bundlePath, 'assets');
 
 async function createBundle(bundlePath) {
+  await rm(bundlePath, { force: true, recursive: true });
   await mkdir(bundlePath, { recursive: true });
   bundleCss(bundlePath, cssDirPath);
   bundleHtml();
