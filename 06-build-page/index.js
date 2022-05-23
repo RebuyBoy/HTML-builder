@@ -1,46 +1,49 @@
 const { mkdir, readdir, readFile, open, rm, copyFile } = require('fs/promises');
 const path = require('path');
-
 const bundlePath = path.join(__dirname, 'project-dist');
 const componentsPath = path.join(__dirname, 'components');
 const templatePath = path.join(__dirname, 'template.html');
 const bundleHtmlPath = path.join(bundlePath, 'index.html');
 const cssDirPath = path.join(__dirname, 'styles');
-const assetsDirPath = path.join(__dirname, 'assets');
-const bundleAssetsDirPath = path.join(bundlePath, 'assets');
-
+const assetsPath = path.join(__dirname, 'assets');
+const bundleAssetsPath = path.join(bundlePath, 'assets');
 
 async function createBundle(bundlePath) {
+  await mkdir(bundlePath, { recursive: true });
+  bundleCss(bundlePath, cssDirPath);
+  bundleHtml();
+  copyAssets(bundleAssetsPath, assetsPath);
+}
+
+async function bundleHtml() {
   try {
-    await mkdir(bundlePath, { recursive: true });
-    bundleCss(bundlePath, cssDirPath);
-    bundleHtml();
-    copyAssets(bundleAssetsDirPath, assetsDirPath);
+    const indexHtmlStream = await open(bundleHtmlPath, 'w+');
+    const components = await readComponents(componentsPath);
+    const template = await readFile(templatePath, { encoding: 'utf-8' });
+    const processedTemplate = handleTemplate(template, components);
+    indexHtmlStream.writeFile(processedTemplate);
+    indexHtmlStream.close();
   } catch (err) {
     console.error(err);
   }
 }
-async function bundleHtml() {
-  const indexHtmlStream = await open(bundleHtmlPath, 'w+');
-  const components = await readComponents(componentsPath);
-  const template = await readFile(templatePath, { encoding: 'utf-8' });
-  const processedTemplate = handleTemplate(template, components);
-  indexHtmlStream.writeFile(processedTemplate);
-  indexHtmlStream.close();
-}
 
 async function readComponents(componentsPath) {
-  const files = await readdir(componentsPath, { withFileTypes: true });
-  const result = new Map();
-  for (let file of files) {
-    const ext = path.extname(file.name);
-    if (file.isFile() && ext === '.html') {
-      const name = path.basename(file.name, ext);
-      const data = await readFile(path.join(componentsPath, file.name), { encoding: 'utf-8' });
-      result.set(name, data);
+  try {
+    const files = await readdir(componentsPath, { withFileTypes: true });
+    const result = new Map();
+    for (let file of files) {
+      const ext = path.extname(file.name);
+      if (file.isFile() && ext === '.html') {
+        const name = path.basename(file.name, ext);
+        const data = await readFile(path.join(componentsPath, file.name), { encoding: 'utf-8' });
+        result.set(name, data);
+      }
     }
+    return result;
+  } catch (err) {
+    console.error(err);
   }
-  return result;
 }
 
 function handleTemplate(template, components) {
@@ -52,16 +55,20 @@ function handleTemplate(template, components) {
 }
 
 async function bundleCss(bundleDir, sourceDir) {
-  const files = await readdir(sourceDir, { withFileTypes: true });
-  const bundlePath = path.join(bundleDir, 'style.css');
-  const streamFile = await open(bundlePath, 'w');
-  for (let file of files) {
-    if (file.isFile() && path.extname(file.name) === '.css') {
-      const data = await readFile(path.join(sourceDir, file.name), { encoding: 'utf8' });
-      streamFile.appendFile(data);
+  try {
+    const files = await readdir(sourceDir, { withFileTypes: true });
+    const bundlePath = path.join(bundleDir, 'style.css');
+    const streamFile = await open(bundlePath, 'w');
+    for (let file of files) {
+      if (file.isFile() && path.extname(file.name) === '.css') {
+        const data = await readFile(path.join(sourceDir, file.name), { encoding: 'utf8' });
+        streamFile.appendFile(data);
+      }
     }
+    streamFile.close(bundlePath);
+  } catch (err) {
+    console.error(err);
   }
-  streamFile.close(bundlePath);
 }
 
 async function copyAssets(destination, source) {

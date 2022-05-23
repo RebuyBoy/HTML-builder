@@ -16,8 +16,4 @@ async function bundleCss(dirPath) {
 
 const cssDirPath = path.join(__dirname, 'styles');
 
-try {
-  bundleCss(cssDirPath);
-} catch (err) {
-  console.log(err);
-}
+bundleCss(cssDirPath);

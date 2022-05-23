@@ -22,18 +22,3 @@ const dirSourcePath = path.join(__dirname, 'files');
 const dirDestPath = dirSourcePath + '-copy';
 copyDir(dirSourcePath, dirDestPath);
 
-
-
-
-// let copy_r = async function (src, dest) {
-//   let exists = fs.existsSync(src);
-//   let stats = exists && await fsp.stat(src);
-//   let isDirectory = exists && stats.isDirectory();
-//   if (exists && isDirectory) {
-//     await fsp.mkdir(dest);
-//     for (const i of (await fsp.readdir(src)).values()) {
-//       await copy_r(path.join(src, i), path.join(dest, i))
-//     }
-//   } else
-//     await fsp.copyFile(src, dest);
-// }
