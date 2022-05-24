@@ -8,10 +8,10 @@ const cssDirPath = path.join(__dirname, 'styles');
 const assetsPath = path.join(__dirname, 'assets');
 const bundleAssetsPath = path.join(bundlePath, 'assets');
 
-async function createBundle(bundlePath) {
-  await rm(bundlePath, { force: true, recursive: true });
-  await mkdir(bundlePath, { recursive: true });
-  bundleCss(bundlePath, cssDirPath);
+async function createBundle(destination) {
+  await rm(destination, { force: true, recursive: true });
+  await mkdir(destination, { recursive: true });
+  bundleCss(destination, cssDirPath);
   bundleHtml();
   copyAssets(bundleAssetsPath, assetsPath);
 }
@@ -29,15 +29,15 @@ async function bundleHtml() {
   }
 }
 
-async function readComponents(componentsPath) {
+async function readComponents(source) {
   try {
-    const files = await readdir(componentsPath, { withFileTypes: true });
+    const files = await readdir(source, { withFileTypes: true });
     const result = new Map();
     for (let file of files) {
       const ext = path.extname(file.name);
       if (file.isFile() && ext === '.html') {
         const name = path.basename(file.name, ext);
-        const data = await readFile(path.join(componentsPath, file.name), { encoding: 'utf-8' });
+        const data = await readFile(path.join(source, file.name), { encoding: 'utf-8' });
         result.set(name, data);
       }
     }
@@ -50,20 +50,20 @@ async function readComponents(componentsPath) {
 function handleTemplate(template, components) {
   let result = template;
   for (let componentName of components.keys()) {
-    result = result.replace(`{{${componentName}}}`, components.get(componentName));
+    result = result.replace(new RegExp(`{{${componentName}}}`, 'g'), components.get(componentName));
   }
   return result;
 }
 
-async function bundleCss(bundleDir, sourceDir) {
+async function bundleCss(destination, source) {
   try {
-    const files = await readdir(sourceDir, { withFileTypes: true });
-    const bundlePath = path.join(bundleDir, 'style.css');
+    const files = await readdir(source, { withFileTypes: true });
+    const bundlePath = path.join(destination, 'style.css');
     const streamFile = await open(bundlePath, 'w');
     for (let file of files) {
       if (file.isFile() && path.extname(file.name) === '.css') {
-        const data = await readFile(path.join(sourceDir, file.name), { encoding: 'utf8' });
-        streamFile.appendFile(data);
+        const data = await readFile(path.join(source, file.name), { encoding: 'utf8' });
+        streamFile.appendFile(data + '\n\n');
       }
     }
     streamFile.close(bundlePath);
